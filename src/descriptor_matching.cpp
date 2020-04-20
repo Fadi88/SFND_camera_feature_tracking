@@ -33,6 +33,7 @@ void matchDescriptors(cv::Mat &imgSource, cv::Mat &imgRef, vector<cv::KeyPoint> 
         }
 
         //... TODO : implement FLANN matching
+        matcher = cv::DescriptorMatcher::create(cv::DescriptorMatcher::FLANNBASED);
         cout << "FLANN matching";
     }
 
@@ -55,10 +56,13 @@ void matchDescriptors(cv::Mat &imgSource, cv::Mat &imgRef, vector<cv::KeyPoint> 
         t = ((double)cv::getTickCount() - t) / cv::getTickFrequency();
         cout << " (KNN) with n=" << knn_matches.size() << " matches in " << 1000 * t / 1.0 << " ms" << endl;
 
-
+        const float thresthold = 0.8f;
         // TODO : filter matches using descriptor distance ratio test
-        for(const auto &tmp : knn_matches)
-            matches.push_back(tmp[0]);
+        for (const auto &tmp : knn_matches)
+            if (tmp[0].distance > thresthold * tmp[1].distance)
+                matches.push_back(tmp[0]);
+
+        cout << "# keypoints removed = " << knn_matches.size() - matches.size() << endl;
     }
 
     // visualize results
@@ -77,17 +81,17 @@ int main()
     cv::Mat imgSource = cv::imread("../images/img1gray.png");
     cv::Mat imgRef = cv::imread("../images/img2gray.png");
 
-    vector<cv::KeyPoint> kptsSource, kptsRef; 
+    vector<cv::KeyPoint> kptsSource, kptsRef;
     readKeypoints("../dat/C35A5_KptsSource_BRISK_small.dat", kptsSource);
     readKeypoints("../dat/C35A5_KptsRef_BRISK_small.dat", kptsRef);
 
-    cv::Mat descSource, descRef; 
+    cv::Mat descSource, descRef;
     readDescriptors("../dat/C35A5_DescSource_BRISK_small.dat", descSource);
     readDescriptors("../dat/C35A5_DescRef_BRISK_small.dat", descRef);
 
     vector<cv::DMatch> matches;
-    string matcherType = "MAT_BF"; 
-    string descriptorType = "DES_BINARY"; 
-    string selectorType = "SEL_KNN"; 
+    string matcherType = "MAT_BF";
+    string descriptorType = "DES_BINARY";
+    string selectorType = "SEL_KNN";
     matchDescriptors(imgSource, imgRef, kptsSource, kptsRef, descSource, descRef, matches, descriptorType, matcherType, selectorType);
 }
